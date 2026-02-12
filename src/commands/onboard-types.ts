@@ -44,6 +44,9 @@ export type AuthChoice =
   | "xai-api-key"
   | "qianfan-api-key"
   | "custom-api-key"
+  | "cloudru-fm-glm47"
+  | "cloudru-fm-flash"
+  | "cloudru-fm-qwen"
   | "skip";
 export type AuthChoiceGroupId =
   | "openai"
@@ -63,6 +66,7 @@ export type AuthChoiceGroupId =
   | "qwen"
   | "qianfan"
   | "xai"
+  | "cloudru-fm"
   | "custom";
 export type GatewayAuthChoice = "token" | "password";
 export type ResetScope = "config" | "config+creds+sessions" | "full";
@@ -103,6 +107,7 @@ export type OnboardOptions = {
   kimiCodeApiKey?: string;
   geminiApiKey?: string;
   zaiApiKey?: string;
+  cloudruApiKey?: string;
   xiaomiApiKey?: string;
   minimaxApiKey?: string;
   syntheticApiKey?: string;

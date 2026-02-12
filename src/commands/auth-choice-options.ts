@@ -27,6 +27,7 @@ export type AuthChoiceGroupId =
   | "together"
   | "qianfan"
   | "xai"
+  | "cloudru-fm"
   | "custom";
 
 export type AuthChoiceGroup = {
@@ -95,6 +96,12 @@ const AUTH_CHOICE_GROUP_DEFS: {
     label: "Z.AI",
     hint: "GLM Coding Plan / Global / CN",
     choices: ["zai-coding-global", "zai-coding-cn", "zai-global", "zai-cn"],
+  },
+  {
+    value: "cloudru-fm",
+    label: "Cloud.ru FM",
+    hint: "GLM-4.7 / Qwen3 via Claude Code proxy",
+    choices: ["cloudru-fm-glm47", "cloudru-fm-flash", "cloudru-fm-qwen"],
   },
   {
     value: "qianfan",
@@ -262,6 +269,21 @@ export function buildAuthChoiceOptions(params: {
     value: "zai-cn",
     label: "CN",
     hint: "Z.AI CN (open.bigmodel.cn)",
+  });
+  options.push({
+    value: "cloudru-fm-glm47",
+    label: "GLM-4.7 (Full)",
+    hint: "358B MoE, thinking mode, 200K context",
+  });
+  options.push({
+    value: "cloudru-fm-flash",
+    label: "GLM-4.7-Flash (Free)",
+    hint: "Free tier, fast, recommended default",
+  });
+  options.push({
+    value: "cloudru-fm-qwen",
+    label: "Qwen3-Coder-480B",
+    hint: "Code-specialized, 128K context",
   });
   options.push({
     value: "xiaomi-api-key",
