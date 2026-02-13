@@ -27,6 +27,7 @@ export type AuthChoiceGroupId =
   | "together"
   | "qianfan"
   | "xai"
+  | "cloudru-fm"
   | "custom";
 
 export type AuthChoiceGroup = {
@@ -155,6 +156,12 @@ const AUTH_CHOICE_GROUP_DEFS: {
     label: "Cloudflare AI Gateway",
     hint: "Account ID + Gateway ID + API key",
     choices: ["cloudflare-ai-gateway-api-key"],
+  },
+  {
+    value: "cloudru-fm",
+    label: "Cloud.ru FM",
+    hint: "GLM-4.7 / Qwen3 via Claude Code proxy",
+    choices: ["cloudru-fm-glm47", "cloudru-fm-flash", "cloudru-fm-qwen"],
   },
   {
     value: "custom",
@@ -292,6 +299,22 @@ export function buildAuthChoiceOptions(params: {
     hint: "Faster, higher output cost",
   });
   options.push({ value: "custom-api-key", label: "Custom Provider" });
+
+  options.push({
+    value: "cloudru-fm-glm47",
+    label: "Cloud.ru GLM-4.7 (Full)",
+    hint: "200K context, strongest quality via proxy",
+  });
+  options.push({
+    value: "cloudru-fm-flash",
+    label: "Cloud.ru GLM-4.7-Flash (Free)",
+    hint: "Free tier, all 3 tiers use GLM-4.7-Flash",
+  });
+  options.push({
+    value: "cloudru-fm-qwen",
+    label: "Cloud.ru Qwen3-Coder-480B",
+    hint: "Coding-optimized, fallback to GLM-4.7-Flash",
+  });
 
   if (params.includeSkip) {
     options.push({ value: "skip", label: "Skip for now" });
