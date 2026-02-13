@@ -4,13 +4,18 @@ import {
   normalizeApiKeyInput,
   validateApiKeyInput,
 } from "./auth-choice.api-key.js";
-import { resolveCloudruModelPreset, writeCloudruEnvFile } from "./onboard-cloudru-fm.js";
+import { writeCloudruEnvFile } from "./onboard-cloudru-fm.js";
+import {
+  CLOUDRU_FM_PRESETS,
+  CLOUDRU_PROXY_PORT_DEFAULT,
+  CLOUDRU_PROXY_SENTINEL_KEY,
+  CLOUDRU_CLEAR_ENV_EXTRAS,
+  type CloudruModelPreset,
+} from "../config/cloudru-fm.constants.js";
+import { checkProxyHealth } from "../agents/cloudru-proxy-health.js";
 
-/** Proxy base URL for the local cloud.ru FM proxy (default port). */
-const CLOUDRU_PROXY_BASE_URL = "http://localhost:8082";
-
-/** Sentinel value stored in the config so the Claude CLI backend has a non-empty key. */
-const PROXY_SENTINEL_KEY = "not-a-real-key-proxy-only";
+/** Proxy base URL for the local cloud.ru FM proxy. */
+const CLOUDRU_PROXY_BASE_URL = `http://localhost:${CLOUDRU_PROXY_PORT_DEFAULT}`;
 
 /**
  * Auth-choice handler for `cloudru-fm-*` choices.
@@ -35,7 +40,10 @@ export async function applyAuthChoiceCloudruFm(
   }
 
   let nextConfig = params.config;
-  const preset = resolveCloudruModelPreset(authChoice);
+  const preset: CloudruModelPreset | undefined = CLOUDRU_FM_PRESETS[authChoice];
+  if (!preset) {
+    return null;
+  }
 
   // --- 1. Collect the cloud.ru API key -------------------------------------------
 
@@ -43,7 +51,7 @@ export async function applyAuthChoiceCloudruFm(
   let hasCredential = false;
 
   // Check opts (non-interactive CLI flag).
-  const optsKey = (params.opts as Record<string, unknown> | undefined)?.cloudruApiKey;
+  const optsKey = params.opts?.cloudruApiKey;
   if (typeof optsKey === "string" && optsKey.trim()) {
     apiKey = normalizeApiKeyInput(optsKey);
     hasCredential = true;
@@ -147,8 +155,13 @@ export async function applyAuthChoiceCloudruFm(
             env: {
               ...nextConfig.agents?.defaults?.cliBackends?.["claude-cli"]?.env,
               ANTHROPIC_BASE_URL: CLOUDRU_PROXY_BASE_URL,
-              ANTHROPIC_API_KEY: PROXY_SENTINEL_KEY,
+              ANTHROPIC_API_KEY: CLOUDRU_PROXY_SENTINEL_KEY,
             },
+            clearEnv: [
+              "ANTHROPIC_API_KEY",
+              "ANTHROPIC_API_KEY_OLD",
+              ...CLOUDRU_CLEAR_ENV_EXTRAS,
+            ],
           },
         },
         // --- 4. Set primary model and fallbacks ----------------------------------
@@ -165,6 +178,20 @@ export async function applyAuthChoiceCloudruFm(
   const workspaceDir =
     nextConfig.agents?.defaults?.workspace ?? process.cwd();
   await writeCloudruEnvFile({ apiKey, workspaceDir });
+
+  // --- 6. Pre-flight proxy health check (CRIT-01) -------------------------------
+  // Non-blocking: warn user if proxy is not reachable, but don't fail onboarding.
+  const health = await checkProxyHealth(CLOUDRU_PROXY_BASE_URL);
+  if (!health.ok) {
+    await params.prompter.note(
+      [
+        "Warning: proxy is not yet reachable at " + CLOUDRU_PROXY_BASE_URL,
+        "Start it with: docker compose -f docker-compose.cloudru-proxy.yml up -d",
+        `Error: ${health.error ?? "unknown"}`,
+      ].join("\n"),
+      "Proxy Status",
+    );
+  }
 
   return { config: nextConfig };
 }
